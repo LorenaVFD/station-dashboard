@@ -5,14 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Station Dashboard</title>
 <style>
-:root{color-scheme:light dark;--bg:#f4f5f7;--card:#fff;--tx:#1b1f24;--mu:#667085;--bd:#e1e4e8;--ac:#c8102e;--ok:#1a7f37;--bad:#c8102e;--warn:#b25e09}
-@media(prefers-color-scheme:dark){:root{--bg:#14171a;--card:#1e2328;--tx:#eceff2;--mu:#98a2b3;--bd:#2f363d;--ok:#3fb950;--bad:#ff5a5f;--warn:#f0a03c}}
+:root{color-scheme:light dark;--logo-op:.65;--bg:#e8ecf3;--card:#fff;--glass:rgba(255,255,255,.40);--glass-edge:rgba(255,255,255,.8);--field:rgba(255,255,255,.5);--shadow:rgba(30,40,70,.16);--sheen:1;--tx:#14181d;--mu:#4a5565;--bd:rgba(60,70,90,.18);--glow1:rgba(200,16,46,.12);--glow2:rgba(40,90,200,.14);--ac:#c8102e;--ok:#1a7f37;--bad:#c8102e;--warn:#b25e09}
+@media(prefers-color-scheme:dark){:root{--logo-op:.65;--bg:#0b0d10;--card:#1e2328;--glass:rgba(24,30,38,.42);--glass-edge:rgba(255,255,255,.22);--field:rgba(0,0,0,.3);--shadow:rgba(0,0,0,.5);--sheen:.4;--tx:#f1f4f8;--mu:#aab4c3;--bd:rgba(255,255,255,.13);--glow1:rgba(200,16,46,.20);--glow2:rgba(50,100,220,.18);--ok:#3fb950;--bad:#ff5a5f;--warn:#f0a03c}}
 *{box-sizing:border-box}
-body{margin:0;font:15px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--tx);padding:12px}
+body{margin:0;font:15px/1.4 system-ui,sans-serif;background:radial-gradient(60% 45% at 12% 8%,var(--glow1),transparent 65%),radial-gradient(55% 45% at 92% 92%,var(--glow2),transparent 65%),var(--bg);color:var(--tx);padding:12px;min-height:100vh}
+/* The department logo sits fixed behind the whole page. Change --logo-op (top of this style block) to make it stronger or fainter. */
+body::before{content:"";position:fixed;inset:4vh 4vw;z-index:-1;background:url(logo.png) center / contain no-repeat;opacity:var(--logo-op);pointer-events:none}
 .grid{display:grid;gap:12px;max-width:1100px;margin:0 auto 12px}
 .top{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
 .lists{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px}
+.card{position:relative;overflow:hidden;isolation:isolate;padding:14px;border-radius:20px;background:var(--glass);
+-webkit-backdrop-filter:blur(16px) saturate(1.7);backdrop-filter:blur(16px) saturate(1.7);
+border:1px solid var(--glass-edge);
+box-shadow:0 10px 30px var(--shadow),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.08)}
+/* soft diagonal highlight, like light catching the glass */
+.card::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:var(--sheen);background:linear-gradient(135deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,0) 40%,rgba(255,255,255,0) 72%,rgba(255,255,255,.12) 100%)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.card{background:var(--card)}}
 h2{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mu)}
 h2 span{text-transform:none;letter-spacing:0;font-weight:400}
 .big{font-size:44px;font-weight:700;line-height:1}
@@ -20,10 +28,10 @@ h2 span{text-transform:none;letter-spacing:0;font-weight:400}
 .mu{color:var(--mu);font-size:13px}
 .row{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .fc{display:flex;gap:6px;margin-top:10px}
-.fc div{flex:1;text-align:center;font-size:12px;border:1px solid var(--bd);border-radius:6px;padding:4px}
+.fc div{flex:1;text-align:center;font-size:12px;border:1px solid var(--bd);border-radius:12px;background:var(--field);padding:4px}
 .ban{font-size:22px;font-weight:700;padding:8px 12px;border-radius:8px;display:inline-block;color:#fff;margin-bottom:6px}
 .ban.on{background:var(--bad)}.ban.off{background:var(--ok)}.ban.unk{background:var(--mu)}
-.alert{margin:8px 0;padding:8px;border-radius:6px;font-size:13px;border:1px solid var(--bd)}
+.alert{margin:8px 0;padding:8px;border-radius:10px;font-size:13px;border:1px solid var(--bd);background:var(--field)}
 .alert.hot{border-color:var(--warn);color:var(--warn);font-weight:600}
 .warn{color:var(--warn);font-size:13px;margin:6px 0}
 ul{list-style:none;margin:0;padding:0}
@@ -31,15 +39,15 @@ li{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid
 li.done span{text-decoration:line-through;color:var(--mu)}
 li span{flex:1;word-break:break-word}
 input[type=checkbox]{width:18px;height:18px;accent-color:var(--ac)}
-input[type=text]{width:100%;padding:8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx)}
-button.b{padding:7px 12px;border:0;border-radius:6px;background:var(--ac);color:#fff;cursor:pointer}
+input[type=text]{width:100%;padding:8px;border:1px solid var(--bd);border-radius:10px;background:var(--field);color:var(--tx)}
+button.b{padding:7px 12px;border:0;border-radius:10px;background:var(--ac);color:#fff;cursor:pointer}
 button.b.g{background:#1a7f37}
 button.x{background:none;border:0;color:var(--mu);cursor:pointer;font-size:16px}
 .add{display:flex;gap:6px;margin-top:10px}
 .btns{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
 .evform{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .evform input[type=text]{flex:2 1 200px;width:auto}
-.evform input[type=date],.evform input[type=time]{flex:1 1 120px;padding:8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx);font:inherit}
+.evform input[type=date],.evform input[type=time]{flex:1 1 120px;padding:8px;border:1px solid var(--bd);border-radius:10px;background:var(--field);color:var(--tx);font:inherit}
 .ev-when{flex:0 0 150px;font-size:13px;color:var(--mu)}
 li.ev-today .ev-when{color:var(--ok);font-weight:700}
 li.ev-past{opacity:.65}
