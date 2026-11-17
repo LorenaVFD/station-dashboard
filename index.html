@@ -345,6 +345,36 @@ function wxIcon(text, day) {
   return "🌡️";
 }
 
+// Picture for the station's own report: rain, snow and fog come from its wording; otherwise the picture
+// follows the sky (cloud cover), so "Haze" under a clear sky still shows a sun instead of fog.
+function obsIcon(p, fallbackDay) {
+  const text = (p.textDescription || "").toLowerCase();
+  const dn = /\/(day|night)\//.exec(p.icon || "");
+  const day = dn ? dn[1] === "day" : fallbackDay;
+  if (/thunder/.test(text)) return "⛈️";
+  if (/snow|flurr|blizzard/.test(text)) return "❄️";
+  if (/freezing|sleet|ice|wintry/.test(text)) return "🧊";
+  if (/rain|shower|drizzle/.test(text)) return "🌧️";
+  if (/\bfog\b/.test(text)) return "🌫️";
+  const amounts = (p.cloudLayers || []).map(l => String((l && l.amount) || "").toUpperCase());
+  let sky = null;
+  if (amounts.indexOf("OVC") >= 0 || amounts.indexOf("OVX") >= 0) sky = "ovc";
+  else if (amounts.indexOf("BKN") >= 0) sky = "bkn";
+  else if (amounts.indexOf("SCT") >= 0) sky = "sct";
+  else if (amounts.some(a => a === "FEW" || a === "CLR" || a === "SKC")) sky = "clr";
+  if (!sky) {
+    const code = ((/\/(?:day|night)\/([a-z_]+)/.exec(p.icon || "") || [])[1] || "").replace(/^wind_/, "");
+    if (code === "skc" || code === "few") sky = "clr";
+    else if (code === "sct" || code === "bkn" || code === "ovc") sky = code;
+  }
+  if (sky === "clr") return day ? "☀️" : "🌙";
+  if (sky === "sct") return day ? "⛅" : "☁️";
+  if (sky === "bkn") return day ? "🌥️" : "☁️";
+  if (sky === "ovc") return "☁️";
+  if (/haze|smoke|mist|dust/.test(text)) return "🌤️"; // sky unknown: a gentle hint, not a fog bank
+  return wxIcon(text, day);
+}
+
 function tempText(d) {
   if (d.hi != null && d.lo != null) return d.hi + "°/" + d.lo + "°";
   if (d.lo != null) return "Low " + d.lo + "°";
@@ -420,8 +450,8 @@ async function loadWeather() {
     src.style.fontSize = "11px";
     if (obs) {
       const p = obs.p;
-      const desc = p.textDescription || h.shortForecast;
-      t.textContent = wxIcon(desc, h.isDaytime) + " " + cToF(p.temperature.value) + "°F";
+      const desc = (p.textDescription || "").trim(); // wording only ever comes from the station's own report
+      t.textContent = obsIcon(p, h.isDaytime) + " " + cToF(p.temperature.value) + "°F";
       c.textContent = desc;
       const sp = toMph(p.windSpeed), gu = toMph(p.windGust);
       let wind;
@@ -430,7 +460,13 @@ async function loadWeather() {
       else wind = "Wind " + (p.windDirection && p.windDirection.value != null ? compass(p.windDirection.value) + " " : "") + sp + " mph" + (gu && gu > sp ? " (gusts " + gu + ")" : "");
       const rhv = p.relativeHumidity && p.relativeHumidity.value;
       w.textContent = "💨 " + wind + (rhv != null ? "  ·  💧 RH " + Math.round(rhv) + "%" : "");
-      src.textContent = "Measured at " + (obs.name || obs.id) + " · " + new Date(obs.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      const link = document.createElement("a");
+      link.href = "https://forecast.weather.gov/data/obhistory/" + encodeURIComponent(obs.id) + ".html";
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.style.color = "inherit";
+      link.textContent = "Measured at " + (obs.name || obs.id);
+      src.append(link, " · " + new Date(obs.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
     } else {
       src.textContent = "Live station reading unavailable; showing the NWS forecast for this hour.";
     }
